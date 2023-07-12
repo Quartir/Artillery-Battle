@@ -116,7 +116,7 @@ local function LSRefresh(player, location)
 	if profile.Data.Admin == true then
 		game.ReplicatedStorage.databack:FireClient(player, 4)
 		player.PlayerGui.Main.buttons.adminbutton.Visible = true
-		printclient(player, "Welcome Admin")
+		--printclient(player, "Welcome Admin")
 	end
 end
 
@@ -401,12 +401,12 @@ local function ProcessReceipt(receipt_info)
 end
 
 -- Explode func
-local function explode(player, piece)
+local function explode(player, piece, p)
 	--local sfxclone = game.ServerStorage.sfx:Clone()
 	--sfxclone.Parent = workspace
 	local profile = GetPlayerProfileAsync(player)
 	piece.sfx:Destroy()
-
+	mapresetmodule.Tag(p)
 	local explosionsize = (profile.Data.ExplosionSizeUpgrade * 2) + 5
 	local explosion = Instance.new("Explosion")
 	explosion.Position = piece.Position
@@ -490,10 +490,9 @@ local function barrage(player, timemodifier, hitpos)
 	clone.Touched:Connect(function(p)
 		if armed == true then
 			print("Touched")
-			explode(player, clone)
-			
 			gamestate = false
 			armed = false
+			explode(player, clone, p)
 		end
 
 	end)
@@ -501,8 +500,8 @@ local function barrage(player, timemodifier, hitpos)
 	clone2.Touched:Connect(function(p)
 		if armed2 == true then
 			print("Touched")
-			explode(player, clone2)	
 			armed2 = false
+			explode(player, clone2, p)	
 		end
 
 	end)
@@ -510,8 +509,8 @@ local function barrage(player, timemodifier, hitpos)
 	clone1.Touched:Connect(function(p)
 		if armed1 == true then
 			print("Touched")
-			explode(player, clone1)
 			armed1 = false
+			explode(player, clone1, p)
 		end
 
 	end)
@@ -838,12 +837,13 @@ game.ReplicatedStorage.Send.OnServerEvent:Connect(function(player, timemodifier,
 		print("Thread Exited, Warhead Armed")
 	end)()
 
-	clone.Touched:Connect(function()
+	clone.Touched:Connect(function(p)
 		if armed == true then
 			print("Touched")
-			explode(player, clone)
 			gamestate = false
-			player.PlayerGui.FireMenu.Frame.Countdown.Text = "Canceled"
+			armed = false
+			explode(player, clone, p)
+			player.PlayerGui.FireMenu.Frame.Countdown.Text = "Impact"
 		end
 
 	end)
