@@ -27,6 +27,9 @@ local firebutton = firemenu:WaitForChild('Fire')
 local cancelbutton = firemenu:WaitForChild('cancelbutton')
 local barragebutton = firemenu:WaitForChild('barragebutton')
 local barragecount = firemenu:WaitForChild('barragecount')
+local airstrikebutton = firemenu:WaitForChild('airstrikebutton')
+local airstrikecount = firemenu:WaitForChild('airstrikecount')
+
 local shopbutton = Maingui:WaitForChild('buttons').shopbutton
 local adminbutton = Maingui:WaitForChild('buttons').adminbutton
 local gamestate = false
@@ -129,6 +132,16 @@ barragebutton.MouseButton1Click:Connect(function()
 	end
 end)
 
+airstrikebutton.MouseButton1Click:Connect(function()
+	sfx:Play()
+	if gamestate == false then
+		gamestate = true
+		--warn('fireserver')
+		game.ReplicatedStorage.airstrike:FireServer(timemodifier, hitpos)
+	end
+end)
+
+
 local function ShopRefresh()
 	local table = game.ReplicatedStorage.dataask:InvokeServer("Shop0")
 	--print(table)
@@ -182,7 +195,24 @@ local function buyerror(datatype)
 	end
 end
 
-game.ReplicatedStorage.databack.OnClientEvent:Connect(function(datatype, data)
+local function tweenModel(model, CF, info)
+	local CFrameValue = Instance.new("CFrameValue")
+	CFrameValue.Value = model:GetPivot()
+
+	CFrameValue:GetPropertyChangedSignal("Value"):connect(function()
+		model:PivotTo(CFrame.new(CFrameValue.Value.Position, CF.Position) * CFrame.Angles(0,math.rad(90), 0))
+	end)
+
+	local tween = TweenService:Create(CFrameValue, info, {Value = CF})
+	tween:Play()
+	
+	tween.Completed:connect(function()
+		CFrameValue:Destroy()
+		--model:Destroy()
+	end)
+end
+
+game.ReplicatedStorage.databack.OnClientEvent:Connect(function(datatype, data, data2)
 	
 	if datatype == 1 then
 		barragecount.Text = data
@@ -206,26 +236,59 @@ game.ReplicatedStorage.databack.OnClientEvent:Connect(function(datatype, data)
 		print("databack: Admin Gui")
 	end
 	
-	--[[
 	if datatype == 4 then
-		print("OK")
-		local clone = game.ReplicatedStorage.Money:Clone()
-		clone.Name = Players.LocalPlayer.Name..data
-		clone.Parent = Maingui.buttons
-		clone.Text = "+"..data.." Cash"
-		clone.Rotation = math.random(-50, 50)
-		clone.BackgroundTransparency = 1
-		clone.TextTransparency = 0
-		clone.Position = UDim2.new(math.random(2,3.5), 0, math.random(1.5, 3), 0)
-		local tweenGoal = {
-			['TextTransparency'] = 1
-			--['Position'] = UDim2.new(0.031, 0, 0.094, 0)
+		--warn("datatype")
+		local building = game.ReplicatedStorage.tempclone:Clone()
+		building.Parent = game.Workspace
+		building:MoveTo(Players.LocalPlayer.Character.HumanoidRootPart.Position)
+		local clone = game.ReplicatedStorage.A10:Clone()
+		clone.Parent = game.Workspace
+		clone.sfx:Play()
+		local Waypoints = {
+			[1] = hitpos + Vector3.new(2000, 100, 0),
+			[2] = hitpos + Vector3.new(-1000, 100, 0)
 		}
-		local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)
-		local fadetween = TweenService:Create(clone, tweenInfo, tweenGoal)
-		fadetween:Play()
+		
+		clone:PivotTo(CFrame.new(Waypoints[1]))
+		
+		
+		local Point = Waypoints[2]
+			
+		local seconds = (clone:GetPivot().Position - Point).Magnitude * 0.0035
+		
+		
+		print(seconds)
+		local info = TweenInfo.new(seconds, Enum.EasingStyle.Linear)
+		tweenModel(clone, CFrame.new(Point), info)
+		task.wait(seconds * 0.35)
+		for i = 0, 12, 1 do
+			local missle = game.ReplicatedStorage.missle:Clone()
+			missle.Parent = game.Workspace.Missles
+			missle.Position = clone.wings.CFrame.Position
+			local direction = (clone.canopy.CFrame.Position + Vector3.new(0,-4,0)) - (clone.body.CFrame.Position + Vector3.new(0,-2,0))
+			missle:ApplyImpulse(direction * 2000)
+			missle.sfx:Play()
+			missle.Touched:Connect(function(p)
+				if not p:FindFirstAncestor('A10') then
+					print('hi')
+					local explosion = Instance.new('Explosion')
+					explosion.Parent = game.Workspace.Missles
+					explosion.BlastRadius = 13
+					explosion.Position = missle.Position
+					missle:Destroy()
+				end
+				
+			end
+			)
+			wait(seconds * 0.025)
+		end
+		task.wait(seconds * 0.50)
+		clone:Destroy()
+		for i, v in pairs(game.Workspace.Missles:GetChildren()) do
+			v:Destroy()
+		end
 	end
-	]]
+	gamestate = false
 end)
 
 --[[
@@ -451,7 +514,7 @@ local function updateplayerlist()
 	end
 end
 
--- Options
+
 modgui.Frame.TextBox:GetPropertyChangedSignal("Text"):Connect(function()
 	updateplayerlist()
 end)
@@ -465,6 +528,11 @@ adminbutton.MouseButton1Click:Connect(function()
 	end
 end)
 
+modgui.Frame.closebutton.MouseButton1Click:Connect(function()
+	modgui.Enabled = false
+end)
+
+-- Options
 modgui.Frame.Options.Kick.MouseButton1Click:Connect(function()
 	if #tostring(modgui.Frame.TextBox.Text) > 0 then
 		local target = tostring(modgui.Frame.TextBox.Text)
