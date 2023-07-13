@@ -114,7 +114,7 @@ local function LSRefresh(player, location)
 	end
 
 	if profile.Data.Admin == true then
-		game.ReplicatedStorage.databack:FireClient(player, 4)
+		--game.ReplicatedStorage.databack:FireClient(player, 4)
 		player.PlayerGui.Main.buttons.adminbutton.Visible = true
 		--printclient(player, "Welcome Admin")
 	end
@@ -565,245 +565,7 @@ local function barrage(player, timemodifier, hitpos)
 	end	
 end
 
-local function datarespond(player, datatype)
-	--print("Data Resquest started.")
-
-	if datatype == "Shop0" then
-		return Economics(player, 0)
-	end
-
-	if datatype == "Shop1" then
-		LSRefresh(player, 'shop1')
-		return Economics(player, 1)
-	end
-
-	if datatype == "Shop2" then
-		LSRefresh(player, 'shop2')
-		return Economics(player, 2)
-	end
-
-	if datatype == "Shop3" then
-		LSRefresh(player, 'shop3')
-		return Economics(player, 3)
-	end
-
-	if datatype == "Shop4" then
-		LSRefresh(player, 'shop4')
-		return Economics(player, 4)
-	end
-end
-
-local function shutdown()
-	game.Players.ChildAdded:connect(
-		function(h)
-			h:Kick("Server Is Shutting Down: Rejoin")
-		end
-	)
-	for _, i in pairs(game.Players:GetChildren()) do
-		i:Kick('Server Is Shutting Down: Rejoin')
-	end
-end
-
-ms:SubscribeAsync("Kick", function(message)
-	local name = message.Data
-	if pcall(function() Players[name]:Kick() end) then 
-		print("success")
-	end
-end)
--- through some Gui or either something on the client,  fire an event to do this
-
-local function kickasync(playerName)
-	local player = Players:FindFirstChild(playerName) 
-	if player then player:Kick() 
-	else
-		ms:PublishAsync("Kick", playerName)
-	end
-end
-
-
-
-local function GetUserId(Value)
-	if not tonumber(Value) and Players:FindFirstChild(tostring(Value)) then
-		return Players:FindFirstChild(tostring(Value)).UserId
-	else
-		local Id = false
-
-		local SuccesId, ReturnName = pcall(function()
-			Players:GetNameFromUserIdAsync(Value)
-			Id = Value
-		end)
-
-		local SuccesName, ReturnId = pcall(function()
-			Id = Players:GetUserIdFromNameAsync(Value)
-		end)
-		return Id
-	end
-end
-
-local function IsPlrInServer(target)
-	local tbl = Players:GetPlayers()
-	for i, v in pairs(tbl) do
-		if v.Name == target then
-			return true
-		end
-	end
-	return false
-end
-
-local function ExecuteString(plr, datatype, cmd)
-	if datatype == 1 then
-		local profile = GetPlayerProfileAsync(plr)
-		if profile.Data.Admin == true then
-			local success, er = pcall(function()
-				local func = loadstring(cmd)
-
-				func()
-			end)
-
-			if er then
-				print(er)
-				return er
-			end
-
-			if success then
-				print(success)
-				return success
-			end
-		else
-			plr:Kick("lil bro")
-			return
-		end
-	end
-end
-
-local function adminhandler(player, target, datatype, reason, amount)
-
-	if datatype == 1 then
-		print("Kicking", target)
-		kickasync(target)
-	end
-
-	if datatype == 2 then
-		local id = GetUserId(target)
-		local success = ProfileStore:WipeProfileAsync("Player_" .. id)
-		if success == true then
-			print(success)
-			kickasync(target)
-		else
-			warn(success)
-		end
-	end
-
-	if datatype == 3 then
-		local profile = GetPlayerProfileAsync(target)
-		if profile.Data[reason] == nil then
-		else
-			profile.Data[reason] = amount
-			LSRefresh(target, 'Admin Data Change')
-			print(profile.Data[reason])
-		end
-		print(tostring(profile.Data[reason]))
-	end
-
-	if datatype == 4 then
-		mapresetmodule.MapResetGui()
-	end
-
-	if datatype == 5 then
-		player.Character:MoveTo(target.Character.HumanoidRootPart.Position)
-	end
-
-	if datatype == 6 then
-		target.Character:MoveTo(player.Character.HumanoidRootPart.Position)
-	end
-
-	if datatype == 7 then
-		shutdown()
-	end
-
-	if datatype == 8 then
-		if reason == 1 then
-			MarketplaceService:PromptProductPurchase(target, 1577497360)
-		end
-		if reason == 2 then
-			MarketplaceService:PromptProductPurchase(target, 1577492040)
-		end
-		if reason == 3 then
-			MarketplaceService:PromptProductPurchase(target, 1577496269)
-		end
-		if reason == 4 then
-			MarketplaceService:PromptProductPurchase(target, 1577496816)
-		end
-		if reason == 5 then
-			MarketplaceService:PromptProductPurchase(target, 1575591152)
-		end
-	end
-	
-	if datatype == 9 then
-		local playertable = Players:GetPlayers()
-		local yurr = IsPlrInServer(target)
-		local uid = GetUserId(target)
-		if not yurr then
-			local profile = ProfileStore:LoadProfileAsync(
-				"Player_" .. uid,
-				function(place_id, game_job_id)
-					-- place_id and game_job_id identify the Roblox server that has
-					--   this profile currently locked. In rare cases, if the server
-					--   crashes, the profile will stay locked until ForceLoaded by
-					--   a new session.
-					return "ForceLoad"
-				end)
-			if amount == 1 then
-				profile.Data.Banned = true
-				kickasync(target)
-			end
-			
-			if amount == 2 then
-				profile.Data.Banned = false
-			end
-			
-			--print(profile)
-			profile:Release()
-		else
-			local target2 = Players:WaitForChild(target)
-			local profile = GetPlayerProfileAsync(target2)
-			if amount == 1 then
-				profile.Data.Banned = true
-				target:Kick('You have been banned! Appeal in dizzy.')
-			end
-
-			if amount == 2 then
-				profile.Data.Banned = false
-			end
-
-		end
-	end
-end
-
-game.ReplicatedStorage.dataask.OnServerInvoke = datarespond
-game.ReplicatedStorage.execute.OnServerInvoke = ExecuteString
------ Initialize -----
-
--- In case Players have joined the server earlier than this script ran:
-for _, player in ipairs(Players:GetPlayers()) do
-	task.spawn(PlayerAdded, player)
-end
-
-MarketplaceService.ProcessReceipt = ProcessReceipt
------ Connections -----
-
-Players.PlayerAdded:Connect(PlayerAdded)
-
-Players.PlayerRemoving:Connect(function(player)
-	local profile = Profiles[player]
-	if profile ~= nil then
-		profile:Release()
-	end
-end)
-
-
--- Fire event
-game.ReplicatedStorage.Send.OnServerEvent:Connect(function(player, timemodifier, hitpos)
+local function singlefire(player, timemodifier, hitpos)
 
 	local armed = false
 	local gamestate = true
@@ -816,6 +578,7 @@ game.ReplicatedStorage.Send.OnServerEvent:Connect(function(player, timemodifier,
 	local direction = pos2 - pos1
 	local duration = math.log(1.001 + direction.Magnitude * 0.01, timemodifier)
 	local force = direction / duration + Vector3.new(0, game.Workspace.Gravity * duration * 0.5, 0)
+	print(force)
 	print(timemodifier)
 	game.Workspace.Mortar.launchsfx:Play()
 	--print(duration, "Time until target")
@@ -889,7 +652,345 @@ game.ReplicatedStorage.Send.OnServerEvent:Connect(function(player, timemodifier,
 			game.ReplicatedStorage.StoppedEvent:FireClient(player)
 			return
 		end
-	end	
+	end
+end
+
+local function A10Strike(player, timemodifier, hitpos)
+	--warn("a10function")
+	game.ReplicatedStorage.databack:FireAllClients(4, timemodifier, hitpos)
+	
+end
+
+local function datarespond(player, datatype)
+	--print("Data Resquest started.")
+
+	if datatype == "Shop0" then
+		return Economics(player, 0)
+	end
+
+	if datatype == "Shop1" then
+		LSRefresh(player, 'shop1')
+		return Economics(player, 1)
+	end
+
+	if datatype == "Shop2" then
+		LSRefresh(player, 'shop2')
+		return Economics(player, 2)
+	end
+
+	if datatype == "Shop3" then
+		LSRefresh(player, 'shop3')
+		return Economics(player, 3)
+	end
+
+	if datatype == "Shop4" then
+		LSRefresh(player, 'shop4')
+		return Economics(player, 4)
+	end
+end
+
+local function shutdown()
+	game.Players.ChildAdded:connect(
+		function(h)
+			h:Kick("Server Is Shutting Down: Rejoin")
+		end
+	)
+	for _, i in pairs(game.Players:GetChildren()) do
+		i:Kick('Server Is Shutting Down: Rejoin')
+	end
+end
+
+ms:SubscribeAsync("Kick", function(message)
+	local name = message.Data
+	if pcall(function() Players[name]:Kick() end) then 
+		print("success")
+	end
+end)
+-- through some Gui or either something on the client,  fire an event to do this
+
+local function kickasync(playerName)
+	local player = Players:FindFirstChild(playerName) 
+	if player then player:Kick() 
+	else
+		ms:PublishAsync("Kick", playerName)
+	end
+end
+
+local function GetUserId(Value)
+	if not tonumber(Value) and Players:FindFirstChild(tostring(Value)) then
+		return Players:FindFirstChild(tostring(Value)).UserId
+	else
+		local Id = false
+
+		local SuccesId, ReturnName = pcall(function()
+			Players:GetNameFromUserIdAsync(Value)
+			Id = Value
+		end)
+
+		local SuccesName, ReturnId = pcall(function()
+			Id = Players:GetUserIdFromNameAsync(Value)
+		end)
+		return Id
+	end
+end
+
+local function IsPlrInServer(target)
+	local tbl = Players:GetPlayers()
+	for i, v in pairs(tbl) do
+		if v.Name == target then
+			return true
+		end
+	end
+	return false
+end
+
+local function ExecuteString(plr, datatype, cmd)
+	if datatype == 1 then
+		local profile = GetPlayerProfileAsync(plr)
+		if profile.Data.Admin == true then
+			local success, er = pcall(function()
+				local func = loadstring(cmd)
+
+				func()
+			end)
+
+			if er then
+				print(er)
+				return er
+			end
+
+			if success then
+				print(success)
+				return success
+			end
+		else
+			plr:Kick("lil bro")
+			return
+		end
+	end
+end
+
+local function adminhandler(player, target, datatype, reason, amount)
+
+	if datatype == 1 then
+		if not table.find(admins, target.UserId) then
+			print("Kicking", target)
+			kickasync(target)
+		end
+	end
+
+	if datatype == 2 then
+		if not table.find(admins, target.UserId) then
+			local id = GetUserId(target)
+			local success = ProfileStore:WipeProfileAsync("Player_" .. id)
+			if success == true then
+				print(success)
+				kickasync(target)
+			else
+				warn(success)
+			end
+		end
+	end
+
+	if datatype == 3 then
+		local profile = GetPlayerProfileAsync(target)
+		if profile.Data[reason] == nil then
+		else
+			profile.Data[reason] = amount
+			LSRefresh(target, 'Admin Data Change')
+			print(profile.Data[reason])
+		end
+		print(tostring(profile.Data[reason]))
+	end
+
+	if datatype == 4 then
+		mapresetmodule.MapResetGui()
+	end
+
+	if datatype == 5 then
+		player.Character:MoveTo(target.Character.HumanoidRootPart.Position)
+	end
+
+	if datatype == 6 then
+		target.Character:MoveTo(player.Character.HumanoidRootPart.Position)
+	end
+
+	if datatype == 7 then
+		shutdown()
+	end
+
+	if datatype == 8 then
+		if reason == 1 then
+			MarketplaceService:PromptProductPurchase(target, 1577497360)
+		end
+		if reason == 2 then
+			MarketplaceService:PromptProductPurchase(target, 1577492040)
+		end
+		if reason == 3 then
+			MarketplaceService:PromptProductPurchase(target, 1577496269)
+		end
+		if reason == 4 then
+			MarketplaceService:PromptProductPurchase(target, 1577496816)
+		end
+		if reason == 5 then
+			MarketplaceService:PromptProductPurchase(target, 1575591152)
+		end
+	end
+	
+	if datatype == 9 then
+		if not table.find(admins, target.UserId) then
+			local playertable = Players:GetPlayers()
+			local yurr = IsPlrInServer(target)
+			local uid = GetUserId(target)
+			if not yurr then
+				local profile = ProfileStore:LoadProfileAsync(
+					"Player_" .. uid,
+					function(place_id, game_job_id)
+						-- place_id and game_job_id identify the Roblox server that has
+						--   this profile currently locked. In rare cases, if the server
+						--   crashes, the profile will stay locked until ForceLoaded by
+						--   a new session.
+						return "ForceLoad"
+					end)
+				if amount == 1 then
+					profile.Data.Banned = true
+					kickasync(target)
+				end
+				
+				if amount == 2 then
+					profile.Data.Banned = false
+				end
+				
+				--print(profile)
+				profile:Release()
+			else
+				local target2 = Players:WaitForChild(target)
+				local profile = GetPlayerProfileAsync(target2)
+				if amount == 1 then
+					profile.Data.Banned = true
+					target:Kick('You have been banned! Appeal in dizzy.')
+				end
+
+				if amount == 2 then
+					profile.Data.Banned = false
+				end
+
+			end
+		end
+		
+	end
+end
+
+game.ReplicatedStorage.dataask.OnServerInvoke = datarespond
+game.ReplicatedStorage.execute.OnServerInvoke = ExecuteString
+----- Initialize -----
+
+-- In case Players have joined the server earlier than this script ran:
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(PlayerAdded, player)
+end
+
+MarketplaceService.ProcessReceipt = ProcessReceipt
+----- Connections -----
+
+Players.PlayerAdded:Connect(PlayerAdded)
+
+Players.PlayerRemoving:Connect(function(player)
+	local profile = Profiles[player]
+	if profile ~= nil then
+		profile:Release()
+	end
+end)
+
+
+-- Fire event
+game.ReplicatedStorage.Send.OnServerEvent:Connect(function(player, timemodifier, hitpos)
+	singlefire(player, timemodifier, hitpos)
+	--local armed = false
+	--local gamestate = true
+	--local pos1 = game.Workspace.pos1.Position
+	--print(pos1)
+	--local pos2 = hitpos
+	--print(pos2)
+
+	--local starttime = os.clock()		
+	--local direction = pos2 - pos1
+	--local duration = math.log(1.001 + direction.Magnitude * 0.01, timemodifier)
+	--local force = direction / duration + Vector3.new(0, game.Workspace.Gravity * duration * 0.5, 0)
+	--print(timemodifier)
+	--game.Workspace.Mortar.launchsfx:Play()
+	----print(duration, "Time until target")
+
+	--local clone = game.ServerStorage.Projectile:Clone()
+	--clone.Name = player.Name.."Projectile"
+	--clone.Position = pos1
+	--clone.Parent = workspace
+	--clone:ApplyImpulse(force * clone.AssemblyMass)
+	--clone:SetNetworkOwner(nil)
+	--clone.whistle:Play()
+
+	--coroutine.wrap(function()
+	--	armed = false
+	--	wait(0.2)
+	--	clone.Transparency = 0
+	--	wait(0.5)
+	--	armed = true
+	--	print("Thread Exited, Warhead Armed")
+	--end)()
+
+	--clone.Touched:Connect(function(p)
+	--	if armed == true then
+	--		print("Touched")
+	--		gamestate = false
+	--		armed = false
+	--		explode(player, clone, p)
+	--		player.PlayerGui.FireMenu.Frame.Countdown.Text = "Impact"
+	--	end
+
+	--end)
+
+	--game.ReplicatedStorage.Cancel.OnServerEvent:Connect(function()
+	--	print("Server Canceled")
+	--	gamestate = false
+	--	clone:Destroy()
+	--end)
+
+	--while true do 
+	--	task.wait()
+	--	local currenttime = os.clock()
+
+	--	local timesincestart = currenttime - starttime
+
+
+	--	local realtime = duration - timesincestart
+
+	--	local realtimecut = realtime * 10
+	--	realtimecut = math.floor(realtimecut)
+	--	realtimecut = realtimecut / 10
+
+	--	player.PlayerGui.FireMenu.Frame.Countdown.Text = realtimecut
+	--	-- print(realtimecut, "Time until target")
+
+	--	if realtime <= 0 then
+	--		print("Ended")
+	--		--gamestate = false
+	--		player.PlayerGui.FireMenu.Frame.Countdown.Text = "Impact"
+	--		--explode(clone)
+	--	end
+
+	--	if realtime <= -2 then
+	--		warn("Timeout")
+	--		gamestate = false
+	--		--gamestate = false
+	--		player.PlayerGui.FireMenu.Frame.Countdown.Text = "Impact"
+	--		--explode(clone)
+	--	end
+
+	--	if gamestate == false then
+	--		game.ReplicatedStorage.StoppedEvent:FireClient(player)
+	--		return
+	--	end
+	--end	
 end)
 
 -- Barrage checking.
@@ -912,6 +1013,10 @@ game.ReplicatedStorage.Barrage.OnServerEvent:Connect(function(player, timemodifi
 	end
 end)
 
+game.ReplicatedStorage.airstrike.OnServerEvent:Connect(function(player, timemodifier, hitpos)
+	--warn("onservereventa10")
+	A10Strike(player, timemodifier, hitpos)
+end)
 --Admin Events
 game.ReplicatedStorage.adminsend.OnServerEvent:Connect(function(player, target, datatype, reason, amount)
 	local profile = GetPlayerProfileAsync(player)
@@ -923,3 +1028,4 @@ game.ReplicatedStorage.adminsend.OnServerEvent:Connect(function(player, target, 
 		return
 	end
 end)
+	
