@@ -27,7 +27,7 @@ print('Map Reset System Initialized')
 --end
 
 
-function module.Tag(p)
+function module.Tag(p, player)
 	local folder = p:FindFirstAncestorOfClass('Folder')
 	if folder then
 		hits[folder] = {}
