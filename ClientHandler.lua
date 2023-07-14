@@ -17,7 +17,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 -- Outline is the black selection around which arc is selected and time modifier is the default arc selection.
 local outline = 5
 local timemodifier = 1.6
-
+local mapresetmodule = require(game.ReplicatedStorage.mapresetfunction)
 
 -- directories for the buttons
 local higharc = firemenu:WaitForChild('HighArc')
@@ -36,6 +36,13 @@ local gamestate = false
 
 -- Temporary hitposition so it wont error if the player fires before selecting a hit position.
 local hitpos = game.Workspace.pos2.Position
+
+local building = game.ReplicatedStorage.tempclone:Clone()
+building.Parent = game.Workspace
+building:MoveTo(Players.LocalPlayer.Character.HumanoidRootPart.Position)
+local building = game.ReplicatedStorage.tempclone:Clone()
+building.Parent = game.Workspace
+building:MoveTo(Players.LocalPlayer.Character.HumanoidRootPart.Position)
 
 -- arc selectors, higher number is a lower arc
 higharc.MouseButton1Click:Connect(function()
@@ -238,9 +245,6 @@ game.ReplicatedStorage.databack.OnClientEvent:Connect(function(datatype, data, d
 	
 	if datatype == 4 then
 		--warn("datatype")
-		local building = game.ReplicatedStorage.tempclone:Clone()
-		building.Parent = game.Workspace
-		building:MoveTo(Players.LocalPlayer.Character.HumanoidRootPart.Position)
 		local clone = game.ReplicatedStorage.A10:Clone()
 		clone.Parent = game.Workspace
 		clone.sfx:Play()
